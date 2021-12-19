@@ -42,4 +42,25 @@ values ('security'),
        ('cladman'),
        ('gardener');
 
+insert into location_type (name)
+values ('plain'),
+       ('mountain'),
+       ('ridge'),
+       ('plateau'),
+       ('dalina'),
+       ('Lake'),
+       ('dune'),
+       ('desert'),
+       ('rock'),
+       ('cape'),
+       ('oasis');
+
+insert into place_type (name)
+values ('town'),
+       ('settlement'),
+       ('village'),
+       ('mine');
+
+
+
 
