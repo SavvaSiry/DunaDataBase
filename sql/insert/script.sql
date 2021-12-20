@@ -1,9 +1,13 @@
+create type tech_status as enum ('FROM_FACTORY', 'BATTLE_HARDENED', 'DESTROYED');
+
+alter type tech_status owner to s283235;
+
 create table location_type
 (
     id   serial
         constraint location_type_pkey
             primary key,
-    name varchar(128) not null
+    name varchar(255) not null
 );
 
 alter table location_type
@@ -20,7 +24,7 @@ create table location
     id      serial
         constraint location_pk
             primary key,
-    name    varchar(128) not null,
+    name    varchar(255) not null,
     type_id integer
         constraint location_location_type_id_fk
             references location_type
@@ -40,9 +44,7 @@ create table worker_type
     id   serial
         constraint worker_type_pkey
             primary key,
-    name varchar(128) not null
-        constraint worker_type_name_key
-            unique
+    name varchar(255) not null
 );
 
 alter table worker_type
@@ -51,12 +53,15 @@ alter table worker_type
 create index pk_worker_type
     on worker_type (id);
 
+create unique index worker_type_name_uindex
+    on worker_type (name);
+
 create table place_type
 (
     id   serial
         constraint place_type_pk
             primary key,
-    name varchar(128)
+    name varchar(255)
 );
 
 alter table place_type
@@ -87,10 +92,10 @@ create unique index place_type_name_uindex
 
 create table clan
 (
-    id   integer      not null
+    id   serial
         constraint clan_pkey
             primary key,
-    name varchar(128) not null
+    name varchar(255) not null
         constraint clan_name_key
             unique
 );
@@ -103,13 +108,12 @@ create index pk_clan
 
 create table spice_storage
 (
-    id     serial
+    id      serial
         constraint spice_storage_pkey
             primary key,
-    weight numeric not null
+    weight  numeric not null
         constraint spice_storage_weight_check
-            check (weight > (0):: numeric
-) ,
+            check (weight > (0)::numeric),
     clan_id integer not null
         constraint spice_storage_clan_id_fk
             references clan
@@ -121,18 +125,14 @@ alter table spice_storage
 create index pk_spice_storage
     on spice_storage (id);
 
-create index fk
-    on spice_storage (clan_id);
-
 create table spice_goods
 (
-    seller      integer not null
+    seller      integer      not null
         constraint spice_goods_clan_id_fk
             references clan,
-    spice_price numeric not null
+    spice_price numeric      not null
         constraint spice_goods_spice_price_check
-            check (spice_price > (0):: numeric
-) ,
+            check (spice_price > (0)::numeric),
     name_item   varchar(255) not null,
     id          integer      not null
         constraint spice_goods_pkey
@@ -168,8 +168,26 @@ alter table purchases
 create index id_purchases
     on purchases (id);
 
-create index fk_purchases_buyer_item
-    on purchases (item, buyer);
+create table creature
+(
+    clan_id  integer      not null
+        constraint creature_clan_id_fk
+            references clan,
+    birthday date         not null,
+    name     varchar(255) not null,
+    id       serial
+        constraint creature_pkey
+            primary key
+);
+
+alter table creature
+    owner to s283235;
+
+create index pk_creature
+    on creature (id);
+
+create unique index creature_name_uindex
+    on creature (name);
 
 create table tech_type
 (
@@ -188,61 +206,20 @@ create index pk_tech_type
 create unique index tech_type_name_uindex
     on tech_type (name);
 
-create table race
-(
-    name varchar(128) not null
-        constraint race_name_key
-            unique,
-    id   integer      not null
-        constraint race_pkey
-            primary key
-);
-
-alter table race
-    owner to s283235;
-
-create table creature
-(
-    id       serial
-        constraint creature_pkey
-            primary key,
-    name     varchar(128) not null,
-    birthday date         not null,
-    clan_id  integer      not null
-        constraint creature_clan_id_fk
-            references clan,
-    race_id  integer      not null
-        constraint creature_race_id_fk
-            references race
-);
-
-alter table creature
-    owner to s283235;
-
-create index pk_creature
-    on creature (id);
-
-create index fk_clan_race_creature
-    on creature (clan_id, race_id);
-
-create index pk_race
-    on race (id);
-
 create table technique
 (
+    combat_strength numeric,
+    mining_rate     numeric,
+    status          tech_status,
     id              serial
         constraint technique_pk
             primary key,
-    name            varchar(255),
-    status          tech_status,
-    place_id        integer
-        constraint technique_place_id_fk
-            references place,
     type_id         integer
         constraint technique_tech_type_id_fk
             references tech_type,
-    mining_rate     numeric,
-    combat_strength numeric
+    place_id        integer
+        constraint technique_place_id_fk
+            references place
 );
 
 alter table technique
@@ -251,19 +228,16 @@ alter table technique
 create index pk_technique
     on technique (id);
 
-create unique index technique_name_uindex
-    on technique (name);
-
 create table worker
 (
+    type_id     integer not null
+        constraint worker_worker_type_id_fk
+            references worker_type
+            on delete set null,
     id          serial
         constraint worker_pkey
             primary key,
-    position    varchar(128) not null,
-    type_id     integer      not null
-        constraint worker_worker_type_id_fk
-            references worker_type,
-    creature_id integer      not null
+    creature_id integer not null
         constraint worker_creature_id_fk
             references creature
 );
@@ -274,20 +248,17 @@ alter table worker
 create index key_worker
     on worker (id);
 
-create index fk_type_id_creature_id
-    on worker (type_id, creature_id);
-
 create table event
 (
-    id        serial
-        constraint event_pk
-            primary key,
+    date      timestamp,
+    dangerous integer,
+    name      varchar(255),
     place_id  integer
         constraint event_place_id_fk
             references place,
-    name      varchar(255),
-    dangerous integer,
-    date      timestamp
+    id        serial
+        constraint event_pk
+            primary key
 );
 
 alter table event
@@ -298,19 +269,20 @@ create index pk_event
 
 create table order_spice
 (
-    id     serial
-        constraint order_spice_pkey
-            primary key,
-    weight numeric
-        constraint order_spice_weight_check
-            check (weight > (0):: numeric
-) ,
-    status   varchar(255) not null,
-    customer varchar(255) not null,
-    date     timestamp    not null,
     clan_id  integer      not null
         constraint order_spice_clan_id_fk
-            references clan
+            references clan,
+    customer integer      not null
+        constraint order_spice_clan_id_fk_2
+            references clan,
+    status   varchar(255) not null,
+    weight   numeric
+        constraint order_spice_weight_check
+            check (weight > (0)::numeric),
+    id       serial
+        constraint order_spice_pkey
+            primary key,
+    date     timestamp    not null
 );
 
 alter table order_spice
@@ -324,15 +296,15 @@ create index fk_clan_id
 
 create table clan_place
 (
+    clan_id  integer not null
+        constraint clan_place_clan_id_fk
+            references clan,
     id       serial
         constraint clan_place_pkey
             primary key,
     place_id integer not null
         constraint clan_place_place_id_fk
-            references place,
-    clan_id  integer not null
-        constraint clan_place_clan_id_fk
-            references clan
+            references place
 );
 
 alter table clan_place
@@ -349,18 +321,18 @@ create index index_clan_id
 
 create table mining
 (
-    id        serial
-        constraint mining_pkey
-            primary key,
+    worker_id integer not null
+        constraint mining_worker_id_fk
+            references worker,
     place_id  integer not null
         constraint mining_place_id_fk
             references place,
     order_id  integer not null
         constraint mining_order_spice_id_fk
             references order_spice,
-    worker_id integer not null
-        constraint mining_worker_id_fk
-            references worker
+    id        serial
+        constraint mining_pkey
+            primary key
 );
 
 alter table mining
@@ -378,4 +350,17 @@ create index index_mining_order_id
 create index index_mining_worker_id
     on mining (worker_id);
 
+create table event_type
+(
+    id   serial
+        constraint event_type_pk
+            primary key,
+    name varchar(128) not null
+);
+
+alter table event_type
+    owner to s283235;
+
+create unique index event_type_name_uindex
+    on event_type (name);
 

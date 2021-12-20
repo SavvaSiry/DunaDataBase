@@ -79,6 +79,9 @@ values
 ('spice collector'),
 ('spice locator');
 
+alter table event alter column event_type type int using event_type::int;
+
+alter table event alter column event_type set not null;
 
 
 
