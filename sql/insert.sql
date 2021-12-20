@@ -61,6 +61,27 @@ values ('town'),
        ('village'),
        ('mine');
 
+insert into event_type (id, name)
+values
+(1,'worm attacks'),
+(2,'sandstorm'),
+(3,'earthquake');
+
+insert into tech_type (name)
+values
+('dragonfly'),
+('Boer'),
+('loader'),
+('carrier'),
+('cargo cruiser'),
+('military cruiser'),
+('disant car'),
+('spice collector'),
+('spice locator');
+
+
+
+
 
 
 
